@@ -27,14 +27,13 @@ public class Neuron {
             weights.put(n,Math.random());
         }
     }
-    public void step(double time, double input) {
+    public void step(double time) {
         double dy = -decay * out;
         double sum = 0;
         Iterator it = weights.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry)it.next();
             Neuron n = (Neuron)pair.getKey();
-            if (n == this) continue;
             double w = (Double)pair.getValue();
             double newWeight = -forgetting * n.out;
             double potential = (n.out * w * time - threshold);
@@ -42,11 +41,14 @@ public class Neuron {
             if (potential > 0) {
                 sum += w * potential;
                 newWeight += gain * out * potential;
-                weights.replace(this, newWeight);
+                weights.replace(n, newWeight);
             }
         }
-        dy += input * sum;
-        newOut = dy / (1 + Math.abs(dy));
+        dy += sum;
+        out = dy / (1 + Math.abs(dy));
+    }
+    public void step(double time, double input) {
+        out = input;
     }
     public void saveState() {
         savedWeights = new HashMap<Neuron,Double>(weights);

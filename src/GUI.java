@@ -2,7 +2,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
 import java.util.ArrayList;
+import java.util.Vector;
 
 public class GUI extends JFrame{
     public boolean mouseDown = false;
@@ -10,7 +13,14 @@ public class GUI extends JFrame{
     private int ROWS = 0;
     private int BUTTON_WIDTH = 100;
     private double time = 1;
+    private int nodeWidth = 5;
+    private int nodeHeight = 5;
+    private boolean shouldScroll = false;
+    private JScrollPane scrollPane;
+    private JPanel nodePane;
+    private JPanel outPane;
     public Net brain;
+    public ArrayList<Node> outStar;
     public ArrayList<Node> nodes;
     public GUI(int columns, int rows) {
         this.COLUMNS = columns;
@@ -18,21 +28,36 @@ public class GUI extends JFrame{
 
         JPanel contentPane = new JPanel();
         contentPane.setLayout(new BoxLayout(contentPane,BoxLayout.X_AXIS));
-        contentPane.setPreferredSize(new Dimension(COLUMNS * 100 + BUTTON_WIDTH, ROWS * 100));
+        contentPane.setSize(new Dimension(COLUMNS * nodeWidth + BUTTON_WIDTH + 100, ROWS * nodeHeight));
 
-        brain = new Net(COLUMNS * ROWS + 1, 0.001, 0.0,0.0001,1);
+        Vector<Integer> layers = new Vector<Integer>();
+        layers.add(70);
+        layers.add(16);
+        layers.add(16);
+        layers.add(1);
+        this.COLUMNS = columns = layers.size();
+        int largest = 0;
+        for (int i = 0; i < layers.size(); i++) {
+            if (layers.get(i).intValue() > largest) {
+                largest = layers.get(i).intValue();
+            }
+        }
+        this.ROWS = rows = largest;
+
+        brain = new Net(layers, 0, 0.0,0.0000,1);
         // 1 extra for an outstar
         nodes = new ArrayList<Node>();
+        outStar = new ArrayList<Node>();
 
         setTitle("Neural Net");
-        setSize(COLUMNS * 100,ROWS * 100);
+        setSize(100 + COLUMNS * nodeWidth + BUTTON_WIDTH,ROWS * nodeHeight    );
         setLayout(new BoxLayout(this,BoxLayout.Y_AXIS));
         setBackground(Color.BLACK);
 
 
         JPanel buttonPane = new JPanel();
         buttonPane.setLayout(new BoxLayout(buttonPane,BoxLayout.Y_AXIS));
-        buttonPane.setPreferredSize(new Dimension(BUTTON_WIDTH,ROWS * 100));
+        buttonPane.setPreferredSize(new Dimension(BUTTON_WIDTH,ROWS * nodeHeight));
         buttonPane.setAlignmentX(JPanel.CENTER_ALIGNMENT);
 
         JButton clear = new JButton("Clear");
@@ -52,7 +77,7 @@ public class GUI extends JFrame{
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                for (Node n : nodes) {
+                for (Node n : outStar) {
                     n.setOut(0);
                 }
                 redraw();
@@ -71,7 +96,7 @@ public class GUI extends JFrame{
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                for (Node n : nodes) {
+                for (Node n : outStar) {
                     n.saved = n.out;
                 }
             }
@@ -81,7 +106,7 @@ public class GUI extends JFrame{
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                for (Node n : nodes) {
+                for (Node n : outStar) {
                     n.setOut(n.saved);
                 }
                 step();
@@ -110,40 +135,66 @@ public class GUI extends JFrame{
         buttonPane.add(saveState);
         buttonPane.add(loadState);
 
+        nodePane = new JPanel();
+        nodePane.setLayout(new BoxLayout(nodePane,BoxLayout.X_AXIS));
+        nodePane.setSize(new Dimension(COLUMNS * nodeWidth, ROWS * nodeHeight));
 
-        JPanel nodePane = new JPanel();
-        nodePane.setLayout(new BoxLayout(nodePane,BoxLayout.Y_AXIS));
-        nodePane.setPreferredSize(new Dimension(COLUMNS * 100, ROWS * 100));
 
         int nodeNum = 0;
 
-        JPanel outStar = new JPanel();
-        outStar.setLayout(new BoxLayout(outStar, BoxLayout.X_AXIS));
-        outStar.setAlignmentY(Component.TOP_ALIGNMENT);
-        outStar.setBackground(Color.BLACK);
-        Node star = new Node(this,brain.brain.get(nodeNum));
-        star.setAlignmentX(JPanel.CENTER_ALIGNMENT);
-        nodes.add(star);
-        outStar.add(star);
-        nodePane.add(outStar);
-        nodeNum++;
-
-        for (int i = 0; i < ROWS; i++) {
-            JPanel row = new JPanel();
-            row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-            row.setAlignmentY(Component.TOP_ALIGNMENT);
-            row.setBackground(Color.BLACK);
-            for (int j = 0; j < COLUMNS; j++) {
-                Node n = new Node(this,brain.brain.get(nodeNum));
-                nodeNum++;
-                row.add(n);
-                nodes.add(n);
+        for (int i = 0; i < COLUMNS; i++) {
+            JPanel column = new JPanel();
+            column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
+            column.setAlignmentY(Component.TOP_ALIGNMENT);
+            column.setBackground(Color.BLACK);
+            for (int k = 0; k < brain.brain.get(i).neurons.size(); k++) {
+                Node node = new Node(this, brain.brain.get(i).neurons.get(k));
+                if (i > 0) {
+                    node.setSize(new Dimension(nodeWidth, nodeHeight));
+                    column.add(node);
+                } else {
+                    outStar.add(node);
+                }
+                nodes.add(node);
             }
-            nodePane.add(row);
+            nodePane.add(column);
         }
 
+        outPane = new JPanel();
+        outPane.setLayout(new BoxLayout(outPane,BoxLayout.Y_AXIS));
+        outPane.setSize(100,70);
+        int node = 0;
+        for (int y = 0; y < 10; y++) {
+            JPanel row = new JPanel();
+            row.setLayout(new BoxLayout(row,BoxLayout.X_AXIS));
+            for (int x = 0; x < 7; x++) {
+                Node n = nodes.get(node);
+                node++;
+                row.add(n);
+            }
+            outPane.add(row);
+        }
+
+
+        scrollPane = new JScrollPane();
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBounds(0, 0, columns * nodeWidth + 20, rows * nodeHeight * 20);
+        scrollPane.setSize(columns * nodeWidth + 20, rows * nodeHeight * 20);
+        scrollPane.getViewport().add(nodePane);
+        scrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener() {
+            public void adjustmentValueChanged(AdjustmentEvent e) {
+                if (e.getValueIsAdjusting()) {
+                    if (e.getAdjustable().getValue() > e.getAdjustable().getMaximum() * 0.95) shouldScroll = true;
+                    else shouldScroll = false;
+                }
+                if (shouldScroll) e.getAdjustable().setValue(e.getAdjustable().getMaximum());
+            }
+        });
+
         contentPane.add(buttonPane);
-        contentPane.add(nodePane);
+        contentPane.add(outPane);
+        contentPane.add(scrollPane);
         this.setContentPane(contentPane);
         this.pack();
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -151,23 +202,33 @@ public class GUI extends JFrame{
         this.setVisible(true);
     }
     public void loadValues() {
-        for (int i = 0; i < brain.brain.size(); i++) {
-            nodes.get(i).setOut(brain.brain.get(i).out);
+        ArrayList<Layer> layers = brain.brain;
+        for (Node node : nodes) {
+            node.setOut(node.node.out);
         }
     }
     public void redraw() {
         for (int i = 0; i < nodes.size(); i++) {
-            nodes.get(i).invalidate();
+            nodes.get(i).revalidate();
             nodes.get(i).repaint();
         }
+        nodePane.revalidate();
+        nodePane.repaint();
+        scrollPane.revalidate();
+        scrollPane.repaint();
+        this.revalidate();
+        this.repaint();
     }
     public void step() {
         ArrayList<Double> inputs = new ArrayList<Double>();
-        for (Node n : nodes) {
+        for (Node n : outStar) {
             inputs.add(n.out);
         }
         brain.step(inputs,time);
         loadValues();
+        for (int i = 0; i < nodes.size(); i++) {
+            System.out.println(i + ": " + nodes.get(i));
+        }
         redraw();
         System.out.println("\n");
     }

@@ -15,10 +15,11 @@ public class Node extends JPanel {
         this.node = node;
         this.out = node.out;
         this.saved = node.out;
-        text = new JLabel("" + node.out);
+        text = new JLabel(String.format("%.2f",out));
         text.setAlignmentX(JLabel.CENTER);
         text.setAlignmentY(JLabel.CENTER);
         text.setForeground(Color.WHITE);
+        text.setFont(new Font("Courier", Font.BOLD,8));
         add(text);
         JPanel p = this;
         this.addMouseListener(new MouseListener() {
@@ -62,10 +63,16 @@ public class Node extends JPanel {
         text.setText(String.format("%.2f",out));
         revalidate();
         repaint();
+        frame.revalidate();
+        frame.repaint();
     }
     public void setOut(double out) {
         this.out = out;
         text.setText(String.format("%.2f",out));
+        revalidate();
+        repaint();
+        frame.revalidate();
+        frame.repaint();
     }
     @Override
     public void paintComponent(Graphics g) {
@@ -74,5 +81,9 @@ public class Node extends JPanel {
         g.fillRect(0,0,this.getWidth(),this.getHeight());
         g.setColor(Color.BLACK);
         g.drawRect(0,0,this.getWidth(),this.getHeight());
+    }
+    @Override
+    public String toString() {
+        return String.format("%.2f",out);
     }
 }
