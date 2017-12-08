@@ -9,14 +9,17 @@ public class Neuron {
     double threshold;
     double forgetting;
     double gain;
-    double newOut;
+    double delta;
+    boolean bias = false;
+    public Node node;
     HashMap<Neuron, Double> savedWeights;
     HashMap<Neuron,Double> weights;
-    public Neuron(double decay, double threshold, double forgetting, double gain) {
+    public Neuron(double decay, double threshold, double forgetting, double gain, boolean bias) {
         this.decay = decay;
         this.threshold = threshold;
         this.forgetting = forgetting;
         this.gain = gain;
+        this.bias = bias;
         weights = new HashMap<Neuron,Double>();
         savedWeights = new HashMap<Neuron,Double>(weights);
         out = Math.random();
@@ -28,24 +31,24 @@ public class Neuron {
         }
     }
     public void step(double time) {
-        double dy = -decay * out;
+        double dy = 0;
         double sum = 0;
         Iterator it = weights.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry)it.next();
             Neuron n = (Neuron)pair.getKey();
-            double w = (Double)pair.getValue();
-            double newWeight = -forgetting * n.out;
-            double potential = (n.out * w * time - threshold);
-            System.out.println(potential);
-            if (potential > 0) {
-                sum += w * potential;
-                newWeight += gain * out * potential;
-                weights.replace(n, newWeight);
+            double potential = 0;
+            if (!n.bias) {
+                double w = (Double) pair.getValue();
+                potential = (n.out * w);
+            } else {
+                potential = (Double)pair.getValue();
             }
+            //System.out.println(potential);
+            sum += potential;
         }
         dy += sum;
-        out = dy / (1 + Math.abs(dy));
+        out = 1 / (1 + Math.exp(-dy));
     }
     public void step(double time, double input) {
         out = input;

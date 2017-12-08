@@ -13,6 +13,7 @@ public class Node extends JPanel {
     public Node(GUI frame, Neuron node) {
         this.frame = frame;
         this.node = node;
+        node.node = this;
         this.out = node.out;
         this.saved = node.out;
         text = new JLabel(String.format("%.2f",out));

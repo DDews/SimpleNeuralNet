@@ -5,6 +5,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Vector;
 
 public class GUI extends JFrame{
@@ -19,6 +21,7 @@ public class GUI extends JFrame{
     private JScrollPane scrollPane;
     private JPanel nodePane;
     private JPanel outPane;
+    private boolean showingWeights = false;
     public Net brain;
     public ArrayList<Node> outStar;
     public ArrayList<Node> nodes;
@@ -72,7 +75,10 @@ public class GUI extends JFrame{
         saveState.setAlignmentX(JButton.CENTER_ALIGNMENT);
         JButton loadState = new JButton("Load State");
         loadState.setAlignmentX(JButton.CENTER_ALIGNMENT);
-
+        JButton backPropogate = new JButton("Back Prop");
+        backPropogate.setAlignmentX(JButton.CENTER_ALIGNMENT);
+        JButton weights = new JButton("Show Weights");
+        weights.setAlignmentX(JButton.CENTER_ALIGNMENT);
         clear.addActionListener(new ActionListener() {
 
             @Override
@@ -128,12 +134,35 @@ public class GUI extends JFrame{
                 brain.load();
             }
         });
+
+        backPropogate.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                backPropogate();
+            }
+        });
+        weights.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (showingWeights) {
+                    showingWeights = false;
+                } else {
+                    showingWeights = true;
+                }
+                invalidate();
+                repaint();
+            }
+        });
         buttonPane.add(clear);
         buttonPane.add(step);
         buttonPane.add(save);
         buttonPane.add(load);
         buttonPane.add(saveState);
         buttonPane.add(loadState);
+        buttonPane.add(backPropogate);
+        buttonPane.add(weights);
 
         nodePane = new JPanel();
         nodePane.setLayout(new BoxLayout(nodePane,BoxLayout.X_AXIS));
@@ -226,11 +255,56 @@ public class GUI extends JFrame{
         }
         brain.step(inputs,time);
         loadValues();
-        for (int i = 0; i < nodes.size(); i++) {
+        /*for (int i = 0; i < nodes.size(); i++) {
             System.out.println(i + ": " + nodes.get(i));
-        }
+        }*/
         redraw();
         System.out.println("\n");
+    }
+    public void backPropogate() {
+        ArrayList<Double> targets = new ArrayList<Double>();
+        ArrayList<Neuron> outputs = brain.brain.get(brain.brain.size() - 1).neurons;
+        for (int i = 1; i <= outputs.size(); i++) {
+            targets.add(nodes.get(nodes.size() - i).out);
+        }
+        brain.backPropogate(targets);
+        redraw();
+        System.out.println("\n");
+    }
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+        if (showingWeights) {
+            for (Node n : nodes) {
+                Iterator it = n.node.weights.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<Neuron, Double> entry = (Map.Entry<Neuron, Double>) it.next();
+                    Neuron neuron = entry.getKey();
+                    if (neuron != null) {
+                        double weight = entry.getValue();
+                        Node node = neuron.node;
+                        int x = node.getX() + (int) (node.getWidth() * 0.5);
+                        int y = node.getY() + (int) (node.getHeight() * 0.5);
+                        Container parent = node.getParent();
+                        while (parent != null) {
+                            x += parent.getX();
+                            y += parent.getY();
+                            parent = parent.getParent();
+                        }
+                        int x2 = n.getX() + (int) (n.getWidth() * 0.5);
+                        int y2 = n.getY() + (int) (n.getHeight() * 0.5);
+                        parent = n.getParent();
+                        while (parent != null) {
+                            x2 += parent.getX();
+                            y2 += parent.getY();
+                            parent = parent.getParent();
+                        }
+                        g.setColor(new Color(Color.HSBtoRGB((float) weight * 0.7f, 1, 1)));
+                        g.drawLine(x, y, x2, y2);
+                    }
+                }
+            }
+        }
     }
     public static void main(String[] args) {
         GUI gui = new GUI(7,10);
