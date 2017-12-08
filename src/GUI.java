@@ -38,7 +38,7 @@ public class GUI extends JFrame{
         Vector<Integer> layers = new Vector<Integer>();
         layers.add(columns * rows);
         layers.add(4);
-        layers.add(1);
+        layers.add(3);
         this.COLUMNS = layers.size();
         int largest = 0;
         for (int i = 0; i < layers.size(); i++) {
@@ -110,7 +110,7 @@ public class GUI extends JFrame{
                 inputs.add(selectedInputs);
                 ArrayList<Double> selectedOutputs = new ArrayList<Double>();
                 ArrayList<Neuron> outputs = brain.brain.get(brain.brain.size() - 1).neurons;
-                for (int i = 1; i <= outputs.size(); i++) {
+                for (int i = outputs.size(); i >= 1; i--) {
                     selectedOutputs.add(nodes.get(nodes.size() - i).out);
                 }
                 targets.add(selectedOutputs);
@@ -149,7 +149,7 @@ public class GUI extends JFrame{
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                for (int i = 0; i < 1000000; i++) {
+                for (int i = 0; i < 10000; i++) {
                     for (int j = 0; j < inputs.size(); j++) {
                         brain.step(inputs.get(j),1);
                         brain.backPropogate(targets.get(j));
@@ -302,7 +302,7 @@ public class GUI extends JFrame{
                             y2 += parent.getY();
                             parent = parent.getParent();
                         }
-                        g.setColor(new Color(Color.HSBtoRGB((float) weight * 0.7f, 1, 1)));
+                        g.setColor(new Color(Color.HSBtoRGB(1f - (float) weight * 0.3f, 1, 1)));
                         g.drawLine(x, y, x2, y2);
                     }
                 }
@@ -310,6 +310,6 @@ public class GUI extends JFrame{
         }
     }
     public static void main(String[] args) {
-        GUI gui = new GUI(2,1);
+        GUI gui = new GUI(7,10);
     }
 }
