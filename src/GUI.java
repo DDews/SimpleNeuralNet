@@ -25,6 +25,8 @@ public class GUI extends JFrame{
     public Net brain;
     public ArrayList<Node> outStar;
     public ArrayList<Node> nodes;
+    public ArrayList<ArrayList<Double>> inputs;
+    public ArrayList<ArrayList<Double>> targets;
     public GUI(int columns, int rows) {
         this.COLUMNS = columns;
         this.ROWS = rows;
@@ -34,23 +36,24 @@ public class GUI extends JFrame{
         contentPane.setSize(new Dimension(COLUMNS * nodeWidth + BUTTON_WIDTH + 100, ROWS * nodeHeight));
 
         Vector<Integer> layers = new Vector<Integer>();
-        layers.add(70);
-        layers.add(16);
-        layers.add(16);
+        layers.add(columns * rows);
+        layers.add(4);
         layers.add(1);
-        this.COLUMNS = columns = layers.size();
+        this.COLUMNS = layers.size();
         int largest = 0;
         for (int i = 0; i < layers.size(); i++) {
             if (layers.get(i).intValue() > largest) {
                 largest = layers.get(i).intValue();
             }
         }
-        this.ROWS = rows = largest;
+        this.ROWS = largest;
 
         brain = new Net(layers, 0, 0.0,0.0000,1);
         // 1 extra for an outstar
         nodes = new ArrayList<Node>();
         outStar = new ArrayList<Node>();
+        inputs = new ArrayList<ArrayList<Double>>();
+        targets = new ArrayList<ArrayList<Double>>();
 
         setTitle("Neural Net");
         setSize(100 + COLUMNS * nodeWidth + BUTTON_WIDTH,ROWS * nodeHeight    );
@@ -63,20 +66,18 @@ public class GUI extends JFrame{
         buttonPane.setPreferredSize(new Dimension(BUTTON_WIDTH,ROWS * nodeHeight));
         buttonPane.setAlignmentX(JPanel.CENTER_ALIGNMENT);
 
-        JButton clear = new JButton("Clear");
+        JButton clear = new JButton("Clear Inputs");
         clear.setAlignmentX(JButton.CENTER_ALIGNMENT);
         JButton step = new JButton("Step");
         step.setAlignmentX(JButton.CENTER_ALIGNMENT);
-        JButton save = new JButton("Save Inputs");
+        JButton save = new JButton("Add to Training");
         save.setAlignmentX(JButton.CENTER_ALIGNMENT);
-        JButton load = new JButton("Load Inputs and Step");
-        load.setAlignmentX(JButton.CENTER_ALIGNMENT);
+        JButton train = new JButton("Train");
+        train.setAlignmentX(JButton.CENTER_ALIGNMENT);
         JButton saveState = new JButton("Save State");
         saveState.setAlignmentX(JButton.CENTER_ALIGNMENT);
         JButton loadState = new JButton("Load State");
         loadState.setAlignmentX(JButton.CENTER_ALIGNMENT);
-        JButton backPropogate = new JButton("Back Prop");
-        backPropogate.setAlignmentX(JButton.CENTER_ALIGNMENT);
         JButton weights = new JButton("Show Weights");
         weights.setAlignmentX(JButton.CENTER_ALIGNMENT);
         clear.addActionListener(new ActionListener() {
@@ -102,21 +103,17 @@ public class GUI extends JFrame{
 
             @Override
             public void actionPerformed(ActionEvent e) {
+                ArrayList<Double> selectedInputs = new ArrayList<Double>();
                 for (Node n : outStar) {
-                    n.saved = n.out;
+                    selectedInputs.add(n.out);
                 }
-            }
-        });
-
-        load.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                for (Node n : outStar) {
-                    n.setOut(n.saved);
+                inputs.add(selectedInputs);
+                ArrayList<Double> selectedOutputs = new ArrayList<Double>();
+                ArrayList<Neuron> outputs = brain.brain.get(brain.brain.size() - 1).neurons;
+                for (int i = 1; i <= outputs.size(); i++) {
+                    selectedOutputs.add(nodes.get(nodes.size() - i).out);
                 }
-                step();
-
+                targets.add(selectedOutputs);
             }
         });
 
@@ -135,13 +132,6 @@ public class GUI extends JFrame{
             }
         });
 
-        backPropogate.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                backPropogate();
-            }
-        });
         weights.addActionListener(new ActionListener() {
 
             @Override
@@ -155,13 +145,25 @@ public class GUI extends JFrame{
                 repaint();
             }
         });
+        train.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                for (int i = 0; i < 1000000; i++) {
+                    for (int j = 0; j < inputs.size(); j++) {
+                        brain.step(inputs.get(j),1);
+                        brain.backPropogate(targets.get(j));
+                    }
+                    System.out.println(i);
+                }
+            }
+        });
         buttonPane.add(clear);
         buttonPane.add(step);
         buttonPane.add(save);
-        buttonPane.add(load);
+        buttonPane.add(train);
         buttonPane.add(saveState);
         buttonPane.add(loadState);
-        buttonPane.add(backPropogate);
         buttonPane.add(weights);
 
         nodePane = new JPanel();
@@ -191,12 +193,12 @@ public class GUI extends JFrame{
 
         outPane = new JPanel();
         outPane.setLayout(new BoxLayout(outPane,BoxLayout.Y_AXIS));
-        outPane.setSize(100,70);
+        outPane.setSize(100,columns * rows);
         int node = 0;
-        for (int y = 0; y < 10; y++) {
+        for (int y = 0; y < rows; y++) {
             JPanel row = new JPanel();
             row.setLayout(new BoxLayout(row,BoxLayout.X_AXIS));
-            for (int x = 0; x < 7; x++) {
+            for (int x = 0; x < columns; x++) {
                 Node n = nodes.get(node);
                 node++;
                 row.add(n);
@@ -259,7 +261,7 @@ public class GUI extends JFrame{
             System.out.println(i + ": " + nodes.get(i));
         }*/
         redraw();
-        System.out.println("\n");
+        //System.out.println("\n");
     }
     public void backPropogate() {
         ArrayList<Double> targets = new ArrayList<Double>();
@@ -269,7 +271,7 @@ public class GUI extends JFrame{
         }
         brain.backPropogate(targets);
         redraw();
-        System.out.println("\n");
+        //System.out.println("\n");
     }
     @Override
     public void paint(Graphics g) {
@@ -282,6 +284,7 @@ public class GUI extends JFrame{
                     Neuron neuron = entry.getKey();
                     if (neuron != null) {
                         double weight = entry.getValue();
+                        if (Math.abs(weight) < 0.1) continue;
                         Node node = neuron.node;
                         int x = node.getX() + (int) (node.getWidth() * 0.5);
                         int y = node.getY() + (int) (node.getHeight() * 0.5);
@@ -307,6 +310,6 @@ public class GUI extends JFrame{
         }
     }
     public static void main(String[] args) {
-        GUI gui = new GUI(7,10);
+        GUI gui = new GUI(2,1);
     }
 }

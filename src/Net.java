@@ -10,7 +10,7 @@ public class Net {
             for (int j = 0; j < size.get(i).intValue(); j++) {
                 layer.neurons.add(new Neuron(decay, threshold, forgetting, gain, false));
             }
-            if (i < size.size() - 1) layer.neurons.add(new Neuron(decay, threshold, forgetting ,gain, true));
+            if (i < size.size() - 2) layer.neurons.add(new Neuron(decay, threshold, forgetting ,gain, true));
             brain.add(layer);
             if (i > 0) {
                 for (int k = 0; k < layer.neurons.size(); k++) {
@@ -86,7 +86,7 @@ public class Net {
                 double target = targets.get(i);
                 cost += Math.pow(o - target,2);
             }
-            System.out.println(cost);
+            //System.out.println(cost);
         }
     }
     public void propogate(int depth) {
