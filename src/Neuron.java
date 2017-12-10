@@ -1,9 +1,10 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class Neuron {
+public class Neuron implements Serializable {
     double out;
     double decay;
     double threshold;

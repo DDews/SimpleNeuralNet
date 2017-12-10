@@ -1,6 +1,10 @@
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class Net {
+public class Net implements Serializable {
     ArrayList<Layer> brain;
     ArrayList<Double> inputs;
     public Net(Vector<Integer> size, double decay, double threshold, double forgetting, double gain) {
@@ -53,6 +57,7 @@ public class Net {
             double target = targets.get(i);
             cost += Math.pow(o - target,2);
         }
+        cost /= 2;
         while (cost > 0.005) {
             for (int i = 0; i < outputs.size(); i++) {
                 double o = outputs.get(i).out;
@@ -70,11 +75,11 @@ public class Net {
                         Neuron from = entry.getKey();
                         double weight = entry.getValue();
                         if (!from.bias) {
-                            n.weights.put(from, weight - n.delta * from.out);
+                            n.weights.put(from, weight - 0.1 * n.delta * from.out);
                         } else {
-                            n.weights.put(from, weight - n.delta);
+                            n.weights.put(from, weight - 0.1 * n.delta);
                         }
-                       // System.out.println(n.weights.get(from));
+                        // System.out.println(n.weights.get(from));
                     }
                 }
             }
@@ -107,18 +112,32 @@ public class Net {
         }
         propogate(depth + 1);
     }
-    public void save() {
-        for (Layer L : brain) {
-            for (Neuron n : L.neurons) {
-                n.savedWeights = new HashMap<Neuron,Double>(n.weights);
-            }
-        }
+
+    public void save() throws Exception {
+        FileOutputStream fout = null;
+        ObjectOutputStream oos = null;
+
+        Date today = new Date();
+        String filename = JOptionPane.showInputDialog("Enter a file name",new SimpleDateFormat("MM-dd-yy").format(today) + ".brain");
+        fout = new FileOutputStream(new File(filename));
+        oos = new ObjectOutputStream(fout);
+        oos.writeObject(this);
+        fout.close();
+        oos.close();
+        System.out.println("done");
     }
-    public void load() {
-        for (Layer L : brain) {
-            for (Neuron n : L.neurons) {
-                n.weights = new HashMap<Neuron,Double>(n.savedWeights);
-            }
+    public static Net load(JFrame frame) throws Exception {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File("."));
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(".brain files","brain");
+        fileChooser.setFileFilter(filter);
+        int returnVal = fileChooser.showOpenDialog(frame);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            FileInputStream fileIn = new FileInputStream(fileChooser.getSelectedFile());
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            Object obj = objectIn.readObject();
+            return (Net)obj;
         }
+        return null;
     }
 }
