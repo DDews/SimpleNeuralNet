@@ -51,6 +51,10 @@ public class Neuron implements Serializable {
         dy += sum;
         out = 1 / (1 + Math.exp(-dy));
     }
+    @Override
+    public String toString() {
+        return "" + out;
+    }
     public void step(double time, double input) {
         out = input;
     }
