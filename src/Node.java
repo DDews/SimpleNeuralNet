@@ -3,6 +3,19 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
+//Neural Net - Node
+//========================================
+//Joey Brennan
+//CS 390L - Cognitive Science and AI
+//Dr. Jody Paul
+//10 December 2017
+//========================================
+//Collaborated with:
+//-Daniel Dews
+//-Harley Dutton
+//-Heather DeMarco
+//-Ethan Johnston
+
 public class Node extends JPanel {
     Neuron node;
     GUI frame;

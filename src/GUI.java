@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Vector;
 
+// This class is all Dan's
+
 public class GUI extends JFrame{
     public boolean mouseDown = false;
     private int COLUMNS = 0;
