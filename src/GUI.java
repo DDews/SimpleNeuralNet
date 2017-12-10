@@ -43,7 +43,7 @@ public class GUI extends JFrame{
 
         GridBagLayout gl = new GridBagLayout();
         GridBagConstraints gc = new GridBagConstraints();
-        gc.fill = GridBagConstraints.CENTER;
+        gc.fill = GridBagConstraints.BOTH;
         gc.gridx = 0;
         gc.gridy = 0;
         JFrame frame = this;
@@ -69,13 +69,13 @@ public class GUI extends JFrame{
         inputs = new ArrayList<Pair<ArrayList<Double>,ArrayList<Double>>>();
         forged = new ArrayList<Node>();
         setTitle("Neural Net");
-        setSize(100 + COLUMNS * nodeWidth + BUTTON_WIDTH,ROWS * nodeHeight    );
-        setLayout(new BoxLayout(this,BoxLayout.Y_AXIS));
+        setPreferredSize(new Dimension(100 + COLUMNS * nodeWidth + BUTTON_WIDTH,400));
+        setLayout(new GridBagLayout());
         setBackground(Color.BLACK);
 
         JPanel buttonPane = new JPanel();
         buttonPane.setLayout(new BoxLayout(buttonPane,BoxLayout.Y_AXIS));
-        buttonPane.setPreferredSize(new Dimension(BUTTON_WIDTH,ROWS * nodeHeight));
+        buttonPane.setMinimumSize(new Dimension(BUTTON_WIDTH,ROWS * nodeHeight));
         buttonPane.setAlignmentX(JPanel.CENTER_ALIGNMENT);
 
         JButton clear = new JButton("Clear Inputs");
@@ -387,22 +387,28 @@ public class GUI extends JFrame{
         JPanel scrollingPane = new JPanel();
         GridBagLayout gridBag = new GridBagLayout();
         GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.BOTH;
         c.gridheight = rows * nodeHeight;
         c.gridwidth = columns * nodeWidth;
+        c.weightx = 100;
+        c.weighty = 100;
         c.gridx = 0;
         c.gridy = 0;
+        c.anchor = GridBagConstraints.CENTER;
         scrollingPane.setLayout(gridBag);
-        scrollingPane.add(scrollPane);
-        gridBag.setConstraints(scrollPane,c);
-        gl.setConstraints(buttonPane,gc);
-        contentPane.add(buttonPane);
+        scrollingPane.add(scrollPane,c);
+        gc.weightx = 40;
+        gc.weighty = 100;
+        gc.anchor = GridBagConstraints.WEST;
+        contentPane.add(buttonPane,gc);
+        gc.weightx = 50;
         gc.gridx = 1;
-        gl.setConstraints(outPane,gc);
-        contentPane.add(outPane);
+        gc.anchor = GridBagConstraints.CENTER;
+        contentPane.add(outPane,gc);
         gc.gridx = 2;
-        gl.setConstraints(scrollingPane,gc);
-        contentPane.add(scrollingPane);
+        gc.weightx = 10;
+        gc.anchor = GridBagConstraints.EAST;
+        contentPane.add(scrollingPane,gc);
        /* gc.gridx = 3;
         gl.setConstraints(forgedPane,gc);
         contentPane.add(forgedPane);*/
