@@ -193,17 +193,8 @@ public class GUI extends JFrame{
             @Override
             public void actionPerformed(ActionEvent e) {
                 for (int i = 0; i < 10; i++) {
-                    for (int j = 0; j <= inputs.size() - 5; j += 5) {
-                        List<Pair<ArrayList<Double>,ArrayList<Double>>> batch = inputs.subList(j,j + 4);
-                        ArrayList<Double> emptyInput = new ArrayList<Double>();
-                        ArrayList<Double> emptyTarget = new ArrayList<Double>();
-                        for (int n = 0; n < outStar.size(); n++) {
-                            emptyInput.add(0d);
-                        }
-                        for (int n = 0; n < brain.brain.get(brain.brain.size() - 1).neurons.size(); n++) {
-                            emptyTarget.add(0d);
-                        }
-                        batch.add(new Pair(emptyInput,emptyTarget));
+                    for (int j = 0; j < inputs.size() - 5; j += 5) {
+                        List<Pair<ArrayList<Double>,ArrayList<Double>>> batch = inputs.subList(j,Math.min(j + 5,inputs.size()));
                         Collections.shuffle(batch);
                         for (int k = 0; k < batch.size(); k++) {
                             brain.step(batch.get(k).getKey(), 1);
@@ -414,7 +405,6 @@ public class GUI extends JFrame{
         contentPane.add(forgedPane);*/
         this.setContentPane(contentPane);
         this.pack();
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setVisible(true);
     }
     public void loadValues() {
@@ -497,7 +487,7 @@ public class GUI extends JFrame{
     public static void main(String[] args) throws Exception {
         int columns = 10;
         int rows = 10;
-        int[] L = new int[] {columns * rows, 5, 3};
+        int[] L = new int[] {columns * rows, 10,5, 3};
         Vector<Integer> layers = new Vector<Integer>();
         for (int d : L) {
             layers.add(d);
