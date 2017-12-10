@@ -403,6 +403,7 @@ public class GUI extends JFrame{
        /* gc.gridx = 3;
         gl.setConstraints(forgedPane,gc);
         contentPane.add(forgedPane);*/
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setContentPane(contentPane);
         this.pack();
         this.setVisible(true);
