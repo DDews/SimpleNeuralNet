@@ -45,6 +45,48 @@ public class Net implements Serializable {
             }
         }
     }
+    public void stepBackwards(ArrayList<Double> targets, double time) {
+        if (brain.size() < 2) return;
+        ArrayList<Neuron> outputs = brain.get(brain.size() - 1).neurons;
+        if (outputs.size() != targets.size()) return;
+        ArrayList<Neuron> secondLast = brain.get(brain.size() - 2).neurons;
+        double cost = 0;
+
+        for (int i = 0; i < outputs.size(); i++) {
+            double o = outputs.get(i).out;
+            double target = targets.get(i);
+            cost += Math.pow(o - target,2);
+        }
+        cost /= 2;
+        while (cost > 0.1) {
+            System.out.println(cost);
+            for (int i = 0; i < outputs.size(); i++) {
+                double o = outputs.get(i).out;
+                double delta = o * (1 - o) * (o - targets.get(i));
+                outputs.get(i).delta = delta;
+            }
+            propogate2(2);
+            ArrayList<Neuron> input = brain.get(0).neurons;
+            ArrayList<Double> inputs = new ArrayList<Double>();
+            for (Neuron n : input) {
+                n.out -= 100 * n.delta;
+                if (n.out < 0) n.out = 0;
+                else if (n.out > 1) n.out = 1;
+                inputs.add(n.out);
+            }
+            System.out.println(inputs);
+            step(inputs,1);
+            cost = 0;
+            GUI.load();
+            for (int i = 0; i < outputs.size(); i++) {
+                double o = outputs.get(i).out;
+                double target = targets.get(i);
+                cost += Math.pow(o - target,2);
+            }
+            cost /= 2;
+            //System.out.println(cost);
+        }
+    }
     public void backPropogate(ArrayList<Double> targets) {
         if (brain.size() < 2) return;
         ArrayList<Neuron> outputs = brain.get(brain.size() - 1).neurons;
@@ -91,11 +133,24 @@ public class Net implements Serializable {
                 double target = targets.get(i);
                 cost += Math.pow(o - target,2);
             }
+            cost /= 2;
             //System.out.println(cost);
         }
     }
+    public void propogate2(int depth) {
+        if (depth > brain.size()) return;
+        ArrayList<Neuron> neurons = brain.get(brain.size() - depth).neurons;
+        ArrayList<Neuron> ahead = brain.get(brain.size() - depth + 1).neurons;
+        for (int i = 0; i < neurons.size(); i++) {
+            Neuron neuronJ = neurons.get(i);
+            double o = neuronJ.out;
+            double delta = o * (1 - o);
+            neuronJ.delta = delta;
+        }
+        propogate(depth + 1);
+    }
     public void propogate(int depth) {
-        if (depth >= brain.size()) return;
+        if (depth > brain.size()) return;
         ArrayList<Neuron> neurons = brain.get(brain.size() - depth).neurons;
         ArrayList<Neuron> ahead = brain.get(brain.size() - depth + 1).neurons;
         for (int i = 0; i < neurons.size(); i++) {

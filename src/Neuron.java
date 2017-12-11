@@ -1,8 +1,5 @@
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class Neuron implements Serializable {
     double out;
@@ -11,6 +8,7 @@ public class Neuron implements Serializable {
     double forgetting;
     double gain;
     double delta;
+    double prevDelta = 0;
     boolean bias = false;
     public Node node;
     HashMap<Neuron, Double> savedWeights;
@@ -50,6 +48,35 @@ public class Neuron implements Serializable {
         }
         dy += sum;
         out = 1 / (1 + Math.exp(-dy));
+    }
+    public void back(double time) {
+        double dy = 0;
+        double sum = 0;
+        Iterator it = weights.entrySet().iterator();
+        out = 1 / (1 + Math.exp(out));
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            Neuron n = (Neuron)pair.getKey();
+            double w = (Double)pair.getValue();
+            if (!n.bias) {
+                w = out / w;
+                if (n.out > w) n.out = w;
+            }
+        }
+
+    }
+    public void back(double time, double input) {
+        out = input;
+        Iterator it = weights.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            Neuron n = (Neuron)pair.getKey();
+            double w = (Double)pair.getValue();
+            if (!n.bias) {
+                w = out / w;
+                if (n.out > w) n.out = w;
+            }
+        }
     }
     @Override
     public String toString() {

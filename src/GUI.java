@@ -30,6 +30,7 @@ public class GUI extends JFrame{
     private JPanel nodePane;
     private JPanel outPane;
     private boolean showingWeights = false;
+    public static JFrame frame;
     public Net brain;
     //public Net forgerer;
     public ArrayList<Node> outStar;
@@ -46,10 +47,10 @@ public class GUI extends JFrame{
         gc.fill = GridBagConstraints.BOTH;
         gc.gridx = 0;
         gc.gridy = 0;
-        JFrame frame = this;
+        frame = this;
         JPanel contentPane = new JPanel();
         contentPane.setLayout(gl);
-        contentPane.setSize(new Dimension(columns * nodeWidth + BUTTON_WIDTH + 100, rows * nodeHeight));
+        contentPane.setSize(new Dimension(columns * nodeWidth + BUTTON_WIDTH, rows * nodeHeight));
 
         this.COLUMNS = layers.size();
         int largest = 0;
@@ -69,7 +70,7 @@ public class GUI extends JFrame{
         inputs = new ArrayList<Pair<ArrayList<Double>,ArrayList<Double>>>();
         forged = new ArrayList<Node>();
         setTitle("Neural Net");
-        setPreferredSize(new Dimension(100 + COLUMNS * nodeWidth + BUTTON_WIDTH,400));
+        setPreferredSize(new Dimension(300 + COLUMNS * nodeWidth + BUTTON_WIDTH,400));
         setLayout(new GridBagLayout());
         setBackground(Color.BLACK);
 
@@ -108,6 +109,8 @@ public class GUI extends JFrame{
         JButton loadImage = new JButton("Load Image");
         loadImage.setAlignmentX(JButton.CENTER_ALIGNMENT);
         loadImage.setAlignmentY(JButton.CENTER_ALIGNMENT);
+        JButton hallucinate = new JButton("Hallucinate");
+        hallucinate.setAlignmentX(JButton.CENTER_ALIGNMENT);
         clear.addActionListener(new ActionListener() {
 
             @Override
@@ -192,10 +195,17 @@ public class GUI extends JFrame{
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                for (int i = 0; i < 10; i++) {
+                String epochs = JOptionPane.showInputDialog("Enter number of epochs","10");
+                int epoch = 10;
+                try {
+                    epoch = Integer.parseInt(epochs);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                for (int i = 0; i < epoch; i++) {
+                    Collections.shuffle(inputs);
                     for (int j = 0; j < inputs.size() - 5; j += 5) {
                         List<Pair<ArrayList<Double>,ArrayList<Double>>> batch = inputs.subList(j,Math.min(j + 5,inputs.size()));
-                        Collections.shuffle(batch);
                         for (int k = 0; k < batch.size(); k++) {
                             brain.step(batch.get(k).getKey(), 1);
                             brain.backPropogate(batch.get(k).getValue());
@@ -216,44 +226,51 @@ public class GUI extends JFrame{
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                File[] images = new File("training_set/").listFiles();
-                try {
-                    for (File file : images) {
-                        BufferedImage image = ImageIO.read(file);
-                        BufferedImage after = new BufferedImage(columns,rows,BufferedImage.TYPE_INT_ARGB);
-                        AffineTransform at = AffineTransform.getScaleInstance((float)columns / image.getWidth(),(float)rows / image.getHeight());
-                        AffineTransformOp scaleOp = new AffineTransformOp(at,AffineTransformOp.TYPE_BILINEAR);
-                        after = scaleOp.filter(image,after);
-                        image = after;
-                        ArrayList<Double> input = new ArrayList<Double>();
-                        ArrayList<Double> target = new ArrayList<Double>();
-                        int n = 0;
-                        for (int xPixel = 0; xPixel < image.getWidth(); xPixel++) {
+                JFileChooser chooser = new JFileChooser();
+                chooser.setCurrentDirectory(new java.io.File("."));
+                chooser.setDialogTitle("Choose a directory of training data");
+                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+                    File[] images = chooser.getSelectedFile().listFiles();
+                    int outputs = brain.brain.get(brain.brain.size() - 1).neurons.size();
+                    try {
+                        for (File file : images) {
+                            BufferedImage image = ImageIO.read(file);
+                            BufferedImage after = new BufferedImage(columns, rows, BufferedImage.TYPE_INT_ARGB);
+                            AffineTransform at = AffineTransform.getScaleInstance((float) columns / image.getWidth(), (float) rows / image.getHeight());
+                            AffineTransformOp scaleOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+                            after = scaleOp.filter(image, after);
+                            image = after;
+                            ArrayList<Double> input = new ArrayList<Double>();
+                            ArrayList<Double> target = new ArrayList<Double>();
+                            int n = 0;
                             for (int yPixel = 0; yPixel < image.getHeight(); yPixel++) {
-                                Color c = new Color(image.getRGB(xPixel, yPixel));
-                                float[] hsb = new float[3];
-                                Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), hsb);
-                                input.add((double)hsb[2]);
-                                outStar.get(n).setOut((double) hsb[2]);
-                                n++;
+                                for (int xPixel = 0; xPixel < image.getWidth(); xPixel++) {
+                                    Color c = new Color(image.getRGB(xPixel, yPixel));
+                                    float[] hsb = new float[3];
+                                    Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), hsb);
+                                    input.add((double) hsb[2]);
+                                    outStar.get(n).setOut((double) hsb[2]);
+                                    n++;
+                                }
                             }
+                            String name = file.getName().split("-")[0];
+                            int firstNum = Integer.parseInt(name);
+                            name = "" + firstNum;
+                            System.out.println(firstNum);
+                            JOptionPane.showMessageDialog(frame, "" + firstNum);
+                            for (int i = 0; i < outputs; i++) {
+                                if (firstNum - 1 == i) target.add(1d);
+                                else target.add(0d);
+                            }
+                            System.out.println(input.size());
+                            inputs.add(new Pair<ArrayList<Double>, ArrayList<Double>>(input, target));
                         }
-                        String name = file.getName().split("-")[0];
-                        int firstNum = Integer.parseInt(name) - 1;
-                        name = "" + firstNum;
-                        System.out.println(firstNum);
-                        JOptionPane.showMessageDialog(frame,"" + firstNum);
-                        for (int i = 0; i < 10; i++) {
-                            if (firstNum == i) target.add(1d);
-                            else target.add(0d);
-                        }
-                        System.out.println(input.size());
-                        inputs.add(new Pair<ArrayList<Double>,ArrayList<Double>>(input,target));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
                     }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(frame, "Done");
                 }
-                JOptionPane.showMessageDialog(frame,"Done");
             }
         });
         loadImage.addActionListener(new ActionListener() {
@@ -274,8 +291,8 @@ public class GUI extends JFrame{
                         after = scaleOp.filter(image,after);
                         image = after;
                         int n = 0;
-                        for (int x = 0; x < image.getWidth(); x++) {
-                            for (int y = 0; y < image.getHeight(); y++) {
+                        for (int y = 0; y < image.getHeight(); y++) {
+                            for (int x = 0; x < image.getWidth(); x++) {
                                 Color c = new Color(image.getRGB(x,y));
                                 float[] hsb = new float[3];
                                 Color.RGBtoHSB(c.getRed(),c.getGreen(),c.getBlue(),hsb);
@@ -290,6 +307,26 @@ public class GUI extends JFrame{
                 redraw();
             }
         });
+        hallucinate.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ArrayList<Double> outputs = new ArrayList<Double>();
+                String input = JOptionPane.showInputDialog("Enter desired outputs, separated by commas");
+                String[] words = input.split(",\\s*");
+                for (String word : words) {
+                    outputs.add(Double.parseDouble(word));
+                }
+                ArrayList<Neuron> neurons = brain.brain.get(brain.brain.size() - 1).neurons;
+                for (Node n : nodes) {
+                    n.node.out = Math.random();
+                    n.setOut(n.node.out);
+                }
+                step();
+                brain.stepBackwards(outputs,1);
+                loadValues();
+            }
+        });
         buttonPane.add(clear);
         buttonPane.add(step);
         buttonPane.add(save);
@@ -300,7 +337,7 @@ public class GUI extends JFrame{
         buttonPane.add(loadState);
         buttonPane.add(weights);
         buttonPane.add(loadImage);
-
+        buttonPane.add(hallucinate);
         nodePane = new JPanel();
         nodePane.setLayout(new BoxLayout(nodePane,BoxLayout.X_AXIS));
         nodePane.setSize(new Dimension(columns * nodeWidth, rows * nodeHeight));
@@ -327,21 +364,21 @@ public class GUI extends JFrame{
         }
 
         outPane = new JPanel();
-        outPane.setLayout(new BoxLayout(outPane,BoxLayout.X_AXIS));
+        outPane.setLayout(new BoxLayout(outPane,BoxLayout.Y_AXIS));
         outPane.setSize(columns * nodeWidth,rows * nodeHeight);
         int node = 0;
-        for (int x = 0; x < columns; x++) {
-            JPanel column = new JPanel();
-            column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
-            column.setAlignmentY(Component.TOP_ALIGNMENT);
-            column.setBackground(Color.BLACK);
-            for (int y = 0; y < rows; y++) {
+        for (int y = 0; y < rows; y++) {
+            JPanel row = new JPanel();
+            row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+            row.setAlignmentX(Component.LEFT_ALIGNMENT);
+            row.setBackground(Color.BLACK);
+            for (int x = 0; x < columns; x++) {
                 Node n = nodes.get(node);
                 n.setSize(new Dimension(nodeWidth,nodeHeight));
                 node++;
-                column.add(n);
+                row.add(n);
             }
-            outPane.add(column);
+            outPane.add(row);
         }
 
         /*JPanel forgedPane = new JPanel();
@@ -486,13 +523,18 @@ public class GUI extends JFrame{
         }
     }
     public static void main(String[] args) throws Exception {
+        String numOutputs = JOptionPane.showInputDialog("How many outputs?");
+        int outputs = Integer.parseInt(numOutputs);
         int columns = 10;
         int rows = 10;
-        int[] L = new int[] {columns * rows, 10,5, 3};
+        int[] L = new int[] {columns * rows, 10,5, outputs};
         Vector<Integer> layers = new Vector<Integer>();
         for (int d : L) {
             layers.add(d);
         }
         GUI gui = new GUI(layers, columns, rows);
+    }
+    public static void load() {
+        ((GUI)frame).loadValues();
     }
 }
